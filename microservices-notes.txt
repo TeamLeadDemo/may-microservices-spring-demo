@@ -1,0 +1,163 @@
+monolithic application
+
+MSA - Microservices Architecture
+Kubernetes
+ - orchestration tool
+
+
+microservices
+-------------
+	- are the seperate spring boot apllication which centres around an entity
+	- will create employees-service and departments-service
+	- for the DB we will work with h2 Database
+	- microservices are independent of each other, so each microservice has its own db
+	- working with entities directly, no pojos ( not recomended)	
+	- no abstraction ( not recomended)
+
+service registry
+---------------
+	- a common registry where all the microservices are registered so that we have an idea of the list of microservices and their url, name etc.
+	- we will work with eureka service registry
+	- given by netflix
+
+api gateway
+----------
+	- a single point of access to all your microservices
+	- provides routing, any incomming request is routed to the specific microservice
+	- can act as load balancers, can automatically scale up and down the microservice instances depending on the amount of incomming requests to that service
+	- will work with zuul gateway
+
+cloud config server
+-------------------
+	- providing the repetive microservice configuration in a github repo and creating a cloud config server to fetch the configuration from the gihub repo so that all the microservices can use that configuration
+	- single point configuration for the microservices
+	- url used https://github.com/TeamLeadDemo/microservices-cloud-config.git	
+
+distributed tracing/logging
+-------------------
+	- to trace the flow of one request through the layers of the microservices 
+	- every request will have a trace id which is common througout the full request accross microservices
+	- we also have a span id which is unique for each microservice for the whole request.
+	- this will help us to understand how far the request has gone through the layers of the microservices
+	- we will use sleuth zipkin for this
+	- first create the zipkin server by visiting the website zipkin.io
+
+dependencies list
+-----------------
+microservices
+-------------
+spring starter web
+spring data jpa
+h2
+lombok
+eureka client
+cloud config client
+zipkin
+sleuth
+
+service-regisrty
+----------------
+eureka server
+
+cloud-gateway
+-------------
+eureka client
+spring boot actuator
+cloud gateway
+
+cloud-config
+------------
+eureka client
+cloud config server
+
+
+application.yml details
+-----------------------
+microservices
+-------------
+server:
+  port: 
+
+spring:
+  application:
+    name: 
+  config:
+    import: "optional:configserver:"
+  zipkin:
+    base-url: http://127.0.0.1:9411/
+
+# remove the below configuration once cloud config is created
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: localhost
+
+service-registry
+----------------
+server:
+  port: 8761
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+cloud-gateway
+-------------
+server:
+  port: 9191
+
+# remove the below configuration once cloud config is created
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: localhost
+
+
+spring:
+  application:
+    name: API-GATEWAY
+  config:
+    import: "optional:configserver:"
+  cloud:
+    gateway:
+      routes:
+        - id: EMPLOYEE-SERVICE
+          uri: lb://EMPLOYEE-SERVICE
+          predicates:
+            - Path=/employees/**
+        - id: DEPARTMENT-SERVICE
+          uri: lb://DEPARTMENT-SERVICE
+          predicates:
+            - Path=/departments/**
+
+cloud-config-server
+-------------------
+server:
+  port: 9296
+
+spring:
+  application:
+    name: CONFIG-SERVER
+  cloud:
+    config:
+      server:
+        git:
+          uri: <github url>
+          clone-on-start: true
+
+in bootstrap.yml
+----------------
+spring:
+  cloud:
+    config:
+      enabled: true
+      uri: http://localhost:9296

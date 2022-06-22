@@ -1,0 +1,10 @@
+server:
+  port: 4002
+
+spring:
+  application:
+    name: EMPLOYEE-SERVICE
+  config:
+    import: "optional:configserver:"
+  zipkin:
+    base-url: http://127.0.0.1:9411/
